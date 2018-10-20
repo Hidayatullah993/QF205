@@ -1,4 +1,4 @@
-import sys
+import sys1
 from PyQt5.QtWidgets import QApplication, QWidget
 
 class Test(QWidget):
