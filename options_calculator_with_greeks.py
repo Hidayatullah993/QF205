@@ -31,12 +31,11 @@ def pre_process_input(
     sigma = float(Volatility)/100
     q = float(Yield_rate)/100
     T = (Expiration_date - Value_date).days/365
-    
     return S, K, r, sigma, q, T
 
 def initialization_parameters(T, K):
 
-    N = 50
+    N = 2000 # N needs to be sufficiently large
     M = 50
 
     Smax = 2*K
@@ -45,20 +44,20 @@ def initialization_parameters(T, K):
     
     return N, M, Smax, deltaT, deltaS
 
-def obtain_matrix_a(deltaT, sigma, r, q, M, algo = 'explicit'):
+def obtain_matrix_a(deltaT, sigma, r, q, M, algorithm):
     #if and elif statements
-    if algo == 'explicit':
+    if algorithm == 'explicit':
         #list comprehension
-        aj = [((1/2)*(deltaT)*((sigma**2)*(j**2) - (r-q)*j)) for j in range(1,M)] 
+        aj = [((1/2)*(deltaT)*((sigma**2)*(j**2) - (r-q)*j)) for j in range(1,M)]
         bj = [(1-(deltaT)*((sigma**2)*(j**2) + r)) for j in range(1,M)]
         cj = [((1/2)*(deltaT)*((sigma**2)*(j**2) + (r-q)*j)) for j in range(1,M)]
-
-    elif algo == 'implicit':
+        
+    elif algorithm == 'implicit':
         aj = [((1/2)*(deltaT)*(((r-q)*j) - (sigma ** 2) * (j ** 2))) for j in range(1,M)]
         bj = [(1 + (deltaT) * ((sigma ** 2)*(j ** 2) + r)) for j in range(1,M)]
         cj = [(-(1/2) * (deltaT) * ((sigma ** 2)*(j ** 2) + (r - q) * j)) for j in range(1,M)]        
     
-    elif algo == 'crank nicolson':
+    elif algorithm == 'crank nicolson':
         aj = [((1/4)*(deltaT)*((sigma**2)*(j**2) - (r-q)*j)) for j in range(1,M)]
         bj = [(-(1/2)*(deltaT)*((sigma**2)*(j**2) + r)) for j in range(1,M)]
         cj = [((1/4)*(deltaT)*((sigma**2)*(j**2) + (r-q)*j)) for j in range(1,M)]
@@ -92,13 +91,13 @@ def obtain_forward_matrices(N, M, deltaS, Smax, K, r, deltaT, a, M1, M2, algorit
 
     if algorithm == 'explicit':
         # for-loop
-        for i in range(N - 1, 0 - 1, - 1):
+        for i in range(N - 1, 0 - 1, -1):
             fc[i] = np.dot(a,fc[i+1])
             fp[i] = np.dot(a,fp[i+1])
             
             #2-D array indexing
             fc[i][0], fp[i][M] = 0, 0
-            fc[i][M], fp[i][0] = (Smax - K*(np.exp(-r*(N-i)*deltaT))), (K*(np.exp(-r*(N-i)*deltaT)))
+            fc[i][M], fp[i][0] = (Smax - K*(np.exp(-r*(N-i)*deltaT/365))), (K*(np.exp(-r*(N-i)*deltaT/365)))
 
     elif algorithm == 'implicit':
 
@@ -128,6 +127,7 @@ def obtain_forward_matrices(N, M, deltaS, Smax, K, r, deltaT, a, M1, M2, algorit
             
             #augmented assignment
             i-=1
+
     return fc, fp
 
 def obtain_call_put_option(S, deltaS, fc, fp):
@@ -165,7 +165,7 @@ def option_price_calculator(
         return calloption
     elif type == 'put':
         return putoption
-
+        
 def delta_calculation(S, K, r, q, T, sigma, optiontype):
     #have to reassign d1 and d2 for new S values
     #local variables
@@ -314,6 +314,52 @@ def get_all_values(
         }
     }
 
+#class
+class implicit():
+    @staticmethod
+    def implicitcallandput(Stock, Exercise_Price, Interest_rate, Volatility, Yield_rate, Expiration_date, Value_date):
+        S = float(Stock)
+        K = float(Exercise_Price)
+        r = float(Interest_rate)/100 
+        sigma = float(Volatility)/100
+        q = float(Yield_rate)/100
+        T = (Expiration_date - Value_date).days/365
+        algorithm = 'implicit'
+        
+        implicit_call = option_price_calculator(S, K, r, sigma, q, T, algorithm, type = 'call')
+        implicit_put = option_price_calculator(S, K, r, sigma, q, T, algorithm, type = 'put')
+        return {'call':implicit_call, 'put':implicit_put}
+
+class explicit():
+    @staticmethod
+    def explicitcallandput(Stock, Exercise_Price, Interest_rate, Volatility, Yield_rate, Expiration_date, Value_date):
+        S = float(Stock)
+        K = float(Exercise_Price)
+        r = float(Interest_rate)/100 
+        sigma = float(Volatility)/100
+        q = float(Yield_rate)/100
+        T = (Expiration_date - Value_date).days/365
+        algorithm = 'explicit'
+        
+        explicit_call = option_price_calculator(S, K, r, sigma, q, T, algorithm, type = 'call')
+        explicit_put = option_price_calculator(S, K, r, sigma, q, T, algorithm, type = 'put')
+        return {'call':explicit_call, 'put':explicit_put}
+
+class crank_nicolson():
+    @staticmethod
+    def crank_nicolson_callandput(Stock, Exercise_Price, Interest_rate, Volatility, Yield_rate, Expiration_date, Value_date):
+        S = float(Stock)
+        K = float(Exercise_Price)
+        r = float(Interest_rate)/100 
+        sigma = float(Volatility)/100
+        q = float(Yield_rate)/100
+        T = (Expiration_date - Value_date).days/365
+        algorithm = 'crank nicolson'
+        
+        crank_nicolson_call = option_price_calculator(S, K, r, sigma, q, T, algorithm, type = 'call')
+        crank_nicolson_put = option_price_calculator(S, K, r, sigma, q, T, algorithm, type = 'put')
+        return {'call':crank_nicolson_call, 'put':crank_nicolson_put}
+
 # tester method
 
 #global variables (to be obtained from GUI)
@@ -347,3 +393,32 @@ print(get_all_values(
     Value_date,
     algorithm,
     option_type = 'put'))
+
+print("-------------------------------------------------------------------")
+print("From classes:")
+print("implicit:")
+print(implicit().implicitcallandput(Stock,
+    Exercise_Price,
+    Interest_rate,
+    Volatility,
+    Yield_rate,
+    Expiration_date,
+    Value_date))
+
+print('explicit:')
+print(explicit().explicitcallandput(Stock,
+    Exercise_Price,
+    Interest_rate,
+    Volatility,
+    Yield_rate,
+    Expiration_date,
+    Value_date))
+
+print('crank_nicolson:')
+print(crank_nicolson().crank_nicolson_callandput(Stock,
+    Exercise_Price,
+    Interest_rate,
+    Volatility,
+    Yield_rate,
+    Expiration_date,
+    Value_date))
