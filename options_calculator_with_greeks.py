@@ -6,12 +6,14 @@ Created on Sat Nov  3 22:41:32 2018
 @author: YY
 """
 
+#removed pandas as we didn't use it
 import datetime
 import numpy as np
-import pandas as pd
-import math #recently added
-import scipy.stats as stats #recently added
+import math
+import scipy.stats as stats #name binding for imported module
+#import statements
 
+#function definition
 def pre_process_input(
     Stock, 
     Exercise_Price, 
@@ -21,9 +23,11 @@ def pre_process_input(
     Expiration_date, 
     Value_date
 ):
+    #built-in functions (float)
+    #assignment statements
     S = float(Stock)
     K = float(Exercise_Price)
-    r = float(Interest_rate)/100
+    r = float(Interest_rate)/100 
     sigma = float(Volatility)/100
     q = float(Yield_rate)/100
     T = (Expiration_date - Value_date).days/365
@@ -42,9 +46,10 @@ def initialization_parameters(T, K):
     return N, M, Smax, deltaT, deltaS
 
 def obtain_matrix_a(deltaT, sigma, r, q, M, algo = 'explicit'):
-
+    #if and elif statements
     if algo == 'explicit':
-        aj = [((1/2)*(deltaT)*((sigma**2)*(j**2) - (r-q)*j)) for j in range(1,M)]
+        #list comprehension
+        aj = [((1/2)*(deltaT)*((sigma**2)*(j**2) - (r-q)*j)) for j in range(1,M)] 
         bj = [(1-(deltaT)*((sigma**2)*(j**2) + r)) for j in range(1,M)]
         cj = [((1/2)*(deltaT)*((sigma**2)*(j**2) + (r-q)*j)) for j in range(1,M)]
 
@@ -62,7 +67,7 @@ def obtain_matrix_a(deltaT, sigma, r, q, M, algo = 'explicit'):
     a = np.zeros((M+1,M+1))
     a[0,0], a[M,M]=1,1
     for j in range(1,M):
-        a[j,j-1:j+2]=aj[j-1], bj[j-1], cj[j-1]
+        a[j,j-1:j+2]=aj[j-1], bj[j-1], cj[j-1] #slicing
     
     #creating M2
     M2 = np.zeros((M+1,M+1))
@@ -81,14 +86,17 @@ def obtain_matrix_a(deltaT, sigma, r, q, M, algo = 'explicit'):
 def obtain_forward_matrices(N, M, deltaS, Smax, K, r, deltaT, a, M1, M2, algorithm):
     fc, fp = np.zeros((N+1,M+1)), np.zeros((N+1,M+1))
     for j in range(M+1):
+        #built-in functions
         fc[N][j] = np.maximum(j*deltaS - K,0)
         fp[N][j] = np.maximum(K - j*deltaS,0)
 
     if algorithm == 'explicit':
-        
+        # for-loop
         for i in range(N - 1, 0 - 1, - 1):
             fc[i] = np.dot(a,fc[i+1])
             fp[i] = np.dot(a,fp[i+1])
+            
+            #2-D array indexing
             fc[i][0], fp[i][M] = 0, 0
             fc[i][M], fp[i][0] = (Smax - K*(np.exp(-r*(N-i)*deltaT))), (K*(np.exp(-r*(N-i)*deltaT)))
 
@@ -98,14 +106,14 @@ def obtain_forward_matrices(N, M, deltaS, Smax, K, r, deltaT, a, M1, M2, algorit
             fc[i + 1][0], fp[i + 1][M] = 0, 0
             fc[i + 1][M], fp[i + 1][0] = (Smax - K*(np.exp(-r*(N-i)*deltaT))), (K*(np.exp(-r*(N-i)*deltaT)))
             
-            # TODO: Inverse required ++
-            
             fc[i] = np.dot(np.linalg.inv(a),fc[i+1])
             fp[i] = np.dot(np.linalg.inv(a),fp[i+1])
             
     elif algorithm == 'crank nicolson':
-
-        for i in range(N-1,0-1,-1):
+        # while-loop (newly added)
+        i=N-1
+        while i>=0: #comparison statement
+#         for i in range(N-1,0-1,-1):
             bc , bp = [] , []
             # 3.1 create b
             bc = np.dot(M2,fc[i+1])
@@ -117,12 +125,14 @@ def obtain_forward_matrices(N, M, deltaS, Smax, K, r, deltaT, a, M1, M2, algorit
     
             # 3.3 compute F
             fc[i], fp[i] = np.dot(np.linalg.inv(M1),bc), np.dot(np.linalg.inv(M1),bp)
-
+            
+            #augmented assignment
+            i-=1
     return fc, fp
 
 def obtain_call_put_option(S, deltaS, fc, fp):
 
-    k = np.int32(np.floor(S/deltaS))
+    k = np.int32(np.floor(S/deltaS)) #built-in function (np.floor)
     calloption, putoption = [],[]
     calloption.append(fc[0][k]+((fc[0][k+1]-fc[0][k])/deltaS)*(S-k*deltaS))
     putoption.append(fp[0][k]+((fp[0][k+1]-fp[0][k])/deltaS)*(S-k*deltaS))
@@ -158,6 +168,7 @@ def option_price_calculator(
 
 def delta_calculation(S, K, r, q, T, sigma, optiontype):
     #have to reassign d1 and d2 for new S values
+    #local variables
     d1gamma = (math.log(S/K)+(r-q+(sigma**2)/2)*(T))/(sigma*math.sqrt(T))
     d2gamma = d1gamma-sigma*math.sqrt(T)
     delta_call, delta_put = math.exp(-q*T)*stats.norm.cdf(d1gamma), -math.exp(-q*T)*stats.norm.cdf(-d1gamma)
@@ -285,7 +296,7 @@ def get_all_values(
             'zero_volatility': ZVc,
         },
         'put': {
-            'value': putoption[0],
+            'value': putoption[0], #indexing
             'delta': delta_put,
             'delta_100': delta_put100,
             'lambda': lambda_put[0],
@@ -305,6 +316,7 @@ def get_all_values(
 
 # tester method
 
+#global variables (to be obtained from GUI)
 Stock = 50
 Exercise_Price = 50
 Interest_rate = 4
@@ -312,8 +324,8 @@ Volatility = 40
 Yield_rate = 1
 Value_date = datetime.date(2011, 1, 1)
 Expiration_date = datetime.date(2011, 7, 3)
-algorithm = 'crank nicolson'
-option_type = 'call'
+algorithm = 'crank nicolson' #options are 'implicit', 'explicit', and 'crank nicolson'
+option_type = 'put'
 
 print(get_all_values(
     Stock,
@@ -324,5 +336,14 @@ print(get_all_values(
     Expiration_date,
     Value_date,
     algorithm,
-    option_type
-))
+    option_type = 'call'), 
+    get_all_values(
+    Stock,
+    Exercise_Price,
+    Interest_rate,
+    Volatility,
+    Yield_rate,
+    Expiration_date,
+    Value_date,
+    algorithm,
+    option_type = 'put'))
