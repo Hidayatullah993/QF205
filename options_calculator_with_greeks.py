@@ -303,6 +303,8 @@ def get_all_values(
         }
     }
 
+# tester method
+
 Stock = 50
 Exercise_Price = 50
 Interest_rate = 4
