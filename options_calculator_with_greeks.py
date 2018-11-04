@@ -111,7 +111,7 @@ def obtain_forward_matrices(N, M, deltaS, Smax, K, r, deltaT, a, M1, M2, algorit
     elif algorithm == 'crank nicolson':
         # while-loop (newly added)
         i=N-1
-        while i>=0: #comparison statement
+        while i >= 0: #comparison statement
 #         for i in range(N-1,0-1,-1):
             bc , bp = [] , []
             # 3.1 create b
@@ -170,7 +170,7 @@ def delta_calculation(S, K, r, q, T, sigma, optiontype):
     #have to reassign d1 and d2 for new S values
     #local variables
     d1gamma = (math.log(S/K)+(r-q+(sigma**2)/2)*(T))/(sigma*math.sqrt(T))
-    d2gamma = d1gamma-sigma*math.sqrt(T)
+    # d2gamma = d1gamma-sigma*math.sqrt(T)
     delta_call, delta_put = math.exp(-q*T)*stats.norm.cdf(d1gamma), -math.exp(-q*T)*stats.norm.cdf(-d1gamma)
     if optiontype == 'call':
         return delta_call 
@@ -421,4 +421,5 @@ print(crank_nicolson().crank_nicolson_callandput(Stock,
     Volatility,
     Yield_rate,
     Expiration_date,
-    Value_date))
+    Value_date)
+)
