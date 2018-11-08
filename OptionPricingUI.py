@@ -9,6 +9,7 @@
 
 #removed pandas as we didn't use it
 from PyQt5 import QtCore, QtGui, QtWidgets
+from options_calculator_with_greeks import get_all_values
 
 
 class Ui_MainWindow(object):
@@ -412,7 +413,101 @@ class Ui_MainWindow(object):
 
 
     def testMethod(self):
-        self.lineEdit_ZeroVolatility_Put.setText("BYE")
+
+        Stock = float(self.lineEdit_StockPrice.text())
+        Exercise_Price = float(self.lineEdit_ExercisePrice.text())
+        Interest_rate = float(self.lineEdit_InterestRate.text())
+        Volatility = float(self.lineEdit_Volatility.text())
+        Yield_rate = float(self.lineEdit_YieldRate.text())
+        Expiration_date = self.dateEdit_ExpirationDate.date().toString()
+        Value_date = self.dateEdit_ValueDate.date().toString()
+
+        print('Expiration_date: ', Expiration_date)
+        print('Value_date: ', Value_date)
+
+        algorithm = ''
+
+        if self.radioButton_CrankN.isChecked():
+            algorithm = 'crank nicolson'
+        elif self.radioButton_Explicit.isChecked():
+            algorithm = 'explicit'
+        else:
+            algorithm = 'implicit'
+
+        values = get_all_values(
+            Stock,
+            Exercise_Price,
+            Interest_rate,
+            Volatility,
+            Yield_rate,
+            Expiration_date,
+            Value_date,
+            algorithm
+        )
+
+        call_value = str(values['call']['value'])
+        call_delta = str(values['call']['delta'])
+        call_delta_100 = str(values['call']['delta_100'])
+        call_lambda = str(values['call']['lambda'])
+        call_gamma = str(values['call']['gamma'])
+        call_gamma_1 = str(values['call']['gamma_1%'])
+        call_theta = str(values['call']['theta'])
+        call_theta_7d = str(values['call']['theta_7d'])
+        call_vega = str(values['call']['vega'])
+        call_rho = str(values['call']['rho'])
+        call_psi = str(values['call']['psi'])
+        call_strike_sensitivity = str(values['call']['strike_sensitivity'])
+        call_intrinsic_value = str(values['call']['intrinsic_value'])
+        call_time_value = str(values['call']['time_value'])
+        call_zero_volatility = str(values['call']['zero_volatility'])
+
+        put_value = str(values['put']['value'])
+        put_delta = str(values['put']['delta'])
+        put_delta_100 = str(values['put']['delta_100'])
+        put_lambda = str(values['put']['lambda'])
+        put_gamma = str(values['put']['gamma'])
+        put_gamma_1 = str(values['put']['gamma_1%'])
+        put_theta = str(values['put']['theta'])
+        put_theta_7d = str(values['put']['theta_7d'])
+        put_vega = str(values['put']['vega'])
+        put_rho = str(values['put']['rho'])
+        put_psi = str(values['put']['psi'])
+        put_strike_sensitivity = str(values['put']['strike_sensitivity'])
+        put_intrinsic_value = str(values['put']['intrinsic_value'])
+        put_time_value = str(values['put']['time_value'])
+        put_zero_volatility = str(values['put']['zero_volatility'])
+
+        
+        self.lineEdit_TheoreticalValue_Call.setText(call_value)
+        self.lineEdit_TheoreticalValue_Put.setText(put_value)
+        self.lineEdit_Delta_Call.setText(call_delta)
+        self.lineEdit_Delta_Put.setText(put_delta)
+        self.lineEdit_Delta100_Call.setText(call_delta_100)
+        self.lineEdit_Delta100_Put.setText(put_delta_100)
+        self.lineEdit_Lambda_Call.setText(call_lambda)
+        self.lineEdit_Lambda_Put.setText(put_lambda)
+        self.lineEdit_Gamma_Call.setText(call_gamma)
+        self.lineEdit_Gamma_Put.setText(put_gamma)
+        self.lineEdit_Gamma1_Call.setText(call_gamma_1)
+        self.lineEdit_Gamma1_Put.setText(put_gamma_1)
+        self.lineEdit_Theta_Call.setText(call_theta)
+        self.lineEdit_Theta_Put.setText(put_theta)
+        self.lineEdit_Theta7_Call.setText(call_theta_7d)
+        self.lineEdit_Theta7_Put.setText(put_theta_7d)
+        self.lineEdit_Vega_Call.setText(call_vega)
+        self.lineEdit_Vega_Put.setText(put_vega)
+        self.lineEdit_Rho_Call.setText(call_rho)
+        self.lineEdit_Rho_Put.setText(put_rho)
+        self.lineEdit_Psi_Call.setText(call_psi)
+        self.lineEdit_Psi_Put.setText(put_psi)
+        self.lineEdit_StrikeSensitivity_Call.setText(call_strike_sensitivity)
+        self.lineEdit_StrikeSensitivity_Put.setText(put_strike_sensitivity)
+        self.lineEdit_IntrinsicValue_Call.setText(call_intrinsic_value)
+        self.lineEdit_IntrinsicValue_Put.setText(put_intrinsic_value)
+        self.lineEdit_TimeValue_Call.setText(call_time_value)
+        self.lineEdit_TimeValue_Put.setText(put_time_value)
+        self.lineEdit_ZeroVolatility_Call.setText(call_zero_volatility)
+        self.lineEdit_ZeroVolatility_Put.setText(put_zero_volatility)
         
 
     

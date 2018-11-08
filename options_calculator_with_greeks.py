@@ -150,6 +150,8 @@ def option_price_calculator(
 
     # NOTE values should already be pre-processed by the get_all_values() method prior to calling this method.
     # S, K, r, sigma, q, T = pre_process_input(Stock, Exercise_Price, Interest_rate, Volatility, Yield_rate, T)
+
+    S, K, r, sigma, q, T = Stock, Exercise_Price, Interest_rate, Volatility, Yield_rate, T
         
     N, M, Smax, deltaT, deltaS = initialization_parameters(T, Exercise_Price)
     
@@ -168,7 +170,6 @@ def delta_calculation(S, K, r, q, T, sigma, optiontype):
     #have to reassign d1 and d2 for new S values
     #local variables
     d1gamma = (math.log(S/K)+(r-q+(sigma**2)/2)*(T))/(sigma*math.sqrt(T))
-    d2gamma = d1gamma-sigma*math.sqrt(T)
     delta_call, delta_put = math.exp(-q*T)*stats.norm.cdf(d1gamma), -math.exp(-q*T)*stats.norm.cdf(-d1gamma)
     if optiontype == 'call':
         return delta_call 
@@ -185,18 +186,16 @@ def get_all_values(
     Expiration_date,
     Value_date,
     algorithm,
-    option_type
-):    
+):  
+    print("INPUTS: ")
+    print("Stock: ", Stock)
+    print("Exercise_Price: ", Exercise_Price)
+    print("Interest_rate: ", Interest_rate)
+    print("Volatility: ", Volatility)
+    print("Algorithm: ", algorithm)
 
-    # S = 50
-    # K = 50
-    # r = 4
-    # sigma = 40
-    # q = 1
-    # Value_date = datetime.date(2018, 10, 24)
-    # Expiration_date = datetime.date(2018, 12, 1)
-    # algo = 'crank nicolson'
-    # option_type = 'call'
+    Value_date = datetime.date(2011, 1, 1)
+    Expiration_date = datetime.date(2011, 7, 3)
 
     #process data first, so can apply to greeks (or can change the flow later on)
 
@@ -207,10 +206,8 @@ def get_all_values(
     putoption = option_price_calculator(S, K, r, sigma, q, T, algorithm, 'put')
 
     #generate for user to see values (or can show both)
-    if option_type == 'call':
-        print('option price = '+ str(calloption))
-    elif option_type == 'put':
-        print('option price = '+ str(putoption))
+    print('option price = '+ str(calloption))
+    print('option price = '+ str(putoption))
 
     #greeks calculation
     d1 = (math.log(S/K)+(r - q + ( sigma ** 2)/2) * (T))/(sigma*math.sqrt(T))
@@ -275,7 +272,7 @@ def get_all_values(
     #zero volatility
     ZVc, ZVp = np.maximum(S*math.exp((r-q)*T)-K,0)*math.exp(-r*T), np.maximum(K-S*math.exp((r-q)*T),0)*math.exp(-r*T)
 
-    return {
+    output_dictionary = {
         'call': {
             'value': calloption[0],
             'delta': delta_call,
@@ -311,6 +308,9 @@ def get_all_values(
             'zero_volatility': ZVp,
         }
     }
+    print(output_dictionary)
+    
+    return output_dictionary
 
 #class
 class implicit():
@@ -361,63 +361,63 @@ class crank_nicolson():
 # tester method
 
 #global variables (to be obtained from GUI)
-Stock = 50
-Exercise_Price = 50
-Interest_rate = 4
-Volatility = 40
-Yield_rate = 1
-Value_date = datetime.date(2011, 1, 1)
-Expiration_date = datetime.date(2011, 7, 3)
-algorithm = 'crank nicolson' #options are 'implicit', 'explicit', and 'crank nicolson'
-option_type = 'put'
+# Stock = 50
+# Exercise_Price = 50
+# Interest_rate = 4
+# Volatility = 40
+# Yield_rate = 1
+# Value_date = datetime.date(2011, 1, 1)
+# Expiration_date = datetime.date(2011, 7, 3)
+# algorithm = 'crank nicolson' #options are 'implicit', 'explicit', and 'crank nicolson'
+# option_type = 'put'
 
-print(get_all_values(
-    Stock,
-    Exercise_Price,
-    Interest_rate,
-    Volatility,
-    Yield_rate,
-    Expiration_date,
-    Value_date,
-    algorithm,
-    option_type = 'call'), 
-    get_all_values(
-    Stock,
-    Exercise_Price,
-    Interest_rate,
-    Volatility,
-    Yield_rate,
-    Expiration_date,
-    Value_date,
-    algorithm,
-    option_type = 'put'))
+# print(get_all_values(
+#     Stock,
+#     Exercise_Price,
+#     Interest_rate,
+#     Volatility,
+#     Yield_rate,
+#     Expiration_date,
+#     Value_date,
+#     algorithm,
+#     option_type = 'call'), 
+#     get_all_values(
+#     Stock,
+#     Exercise_Price,
+#     Interest_rate,
+#     Volatility,
+#     Yield_rate,
+#     Expiration_date,
+#     Value_date,
+#     algorithm,
+#     option_type = 'put'))
 
-print("-------------------------------------------------------------------")
-print("From classes:")
-print("implicit:")
-print(implicit().implicitcallandput(Stock,
-    Exercise_Price,
-    Interest_rate,
-    Volatility,
-    Yield_rate,
-    Expiration_date,
-    Value_date))
+# print("-------------------------------------------------------------------")
+# print("From classes:")
+# print("implicit:")
+# print(implicit().implicitcallandput(Stock,
+#     Exercise_Price,
+#     Interest_rate,
+#     Volatility,
+#     Yield_rate,
+#     Expiration_date,
+#     Value_date))
 
-print('explicit:')
-print(explicit().explicitcallandput(Stock,
-    Exercise_Price,
-    Interest_rate,
-    Volatility,
-    Yield_rate,
-    Expiration_date,
-    Value_date))
+# print('explicit:')
+# print(explicit().explicitcallandput(Stock,
+#     Exercise_Price,
+#     Interest_rate,
+#     Volatility,
+#     Yield_rate,
+#     Expiration_date,
+#     Value_date))
 
-print('crank_nicolson:')
-print(crank_nicolson().crank_nicolson_callandput(Stock,
-    Exercise_Price,
-    Interest_rate,
-    Volatility,
-    Yield_rate,
-    Expiration_date,
-    Value_date)
-)
+# print('crank_nicolson:')
+# print(crank_nicolson().crank_nicolson_callandput(Stock,
+#     Exercise_Price,
+#     Interest_rate,
+#     Volatility,
+#     Yield_rate,
+#     Expiration_date,
+#     Value_date)
+# )
