@@ -31,7 +31,7 @@ def pre_process_input(
     r = float(Interest_rate)/100 
     sigma = float(Volatility)/100
     q = float(Yield_rate)/100
-    T = Value_date.daysTo(Expiration_date)
+    T = Value_date.daysTo(Expiration_date)/365
     return S, K, r, sigma, q, T
 
 def initialization_parameters(T, K):
