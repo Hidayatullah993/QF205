@@ -419,8 +419,8 @@ class Ui_MainWindow(object):
         Interest_rate = float(self.lineEdit_InterestRate.text())
         Volatility = float(self.lineEdit_Volatility.text())
         Yield_rate = float(self.lineEdit_YieldRate.text())
-        Expiration_date = self.dateEdit_ExpirationDate.date().toString()
-        Value_date = self.dateEdit_ValueDate.date().toString()
+        Expiration_date = self.dateEdit_ExpirationDate.date()
+        Value_date = self.dateEdit_ValueDate.date()
 
         print('Expiration_date: ', Expiration_date)
         print('Value_date: ', Value_date)
@@ -444,7 +444,7 @@ class Ui_MainWindow(object):
             Value_date,
             algorithm
         )
-
+        
         call_value = str(values['call']['value'])
         call_delta = str(values['call']['delta'])
         call_delta_100 = str(values['call']['delta_100'])
@@ -460,6 +460,8 @@ class Ui_MainWindow(object):
         call_intrinsic_value = str(values['call']['intrinsic_value'])
         call_time_value = str(values['call']['time_value'])
         call_zero_volatility = str(values['call']['zero_volatility'])
+        
+        print('Call Value (As String): ', call_value)
 
         put_value = str(values['put']['value'])
         put_delta = str(values['put']['delta'])
