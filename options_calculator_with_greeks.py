@@ -7,6 +7,7 @@ Created on Sat Nov  3 22:41:32 2018
 """
 
 #removed pandas as we didn't use it
+from PyQt5 import QtCore, QtGui, QtWidgets
 import datetime
 import numpy as np
 import math
@@ -30,35 +31,34 @@ def pre_process_input(
     r = float(Interest_rate)/100 
     sigma = float(Volatility)/100
     q = float(Yield_rate)/100
-    T = (Expiration_date - Value_date).days/365
-    
+    T = Value_date.daysTo(Expiration_date)/365
     return S, K, r, sigma, q, T
 
 def initialization_parameters(T, K):
-
-    N = 50
-    M = 50
-
-    Smax = 2*K
-    deltaT = T/N
-    deltaS = Smax/M
     
+    M = 50
+    Smax = 2*K
+    deltaT = 0.002
+
+    N=np.int32(np.floor(T/deltaT))
+    deltaS = Smax/M
+
     return N, M, Smax, deltaT, deltaS
 
-def obtain_matrix_a(deltaT, sigma, r, q, M, algo = 'explicit'):
+def obtain_matrix_a(deltaT, sigma, r, q, M, algorithm):
     #if and elif statements
-    if algo == 'explicit':
+    if algorithm == 'explicit':
         #list comprehension
-        aj = [((1/2)*(deltaT)*((sigma**2)*(j**2) - (r-q)*j)) for j in range(1,M)] 
+        aj = [((1/2)*(deltaT)*((sigma**2)*(j**2) - (r-q)*j)) for j in range(1,M)]
         bj = [(1-(deltaT)*((sigma**2)*(j**2) + r)) for j in range(1,M)]
         cj = [((1/2)*(deltaT)*((sigma**2)*(j**2) + (r-q)*j)) for j in range(1,M)]
-
-    elif algo == 'implicit':
+        
+    elif algorithm == 'implicit':
         aj = [((1/2)*(deltaT)*(((r-q)*j) - (sigma ** 2) * (j ** 2))) for j in range(1,M)]
         bj = [(1 + (deltaT) * ((sigma ** 2)*(j ** 2) + r)) for j in range(1,M)]
         cj = [(-(1/2) * (deltaT) * ((sigma ** 2)*(j ** 2) + (r - q) * j)) for j in range(1,M)]        
     
-    elif algo == 'crank nicolson':
+    elif algorithm == 'crank nicolson':
         aj = [((1/4)*(deltaT)*((sigma**2)*(j**2) - (r-q)*j)) for j in range(1,M)]
         bj = [(-(1/2)*(deltaT)*((sigma**2)*(j**2) + r)) for j in range(1,M)]
         cj = [((1/4)*(deltaT)*((sigma**2)*(j**2) + (r-q)*j)) for j in range(1,M)]
@@ -92,13 +92,13 @@ def obtain_forward_matrices(N, M, deltaS, Smax, K, r, deltaT, a, M1, M2, algorit
 
     if algorithm == 'explicit':
         # for-loop
-        for i in range(N - 1, 0 - 1, - 1):
+        for i in range(N - 1, 0 - 1, -1):
             fc[i] = np.dot(a,fc[i+1])
             fp[i] = np.dot(a,fp[i+1])
             
             #2-D array indexing
             fc[i][0], fp[i][M] = 0, 0
-            fc[i][M], fp[i][0] = (Smax - K*(np.exp(-r*(N-i)*deltaT))), (K*(np.exp(-r*(N-i)*deltaT)))
+            fc[i][M], fp[i][0] = (Smax - K*(np.exp(-r*(N-i)*deltaT/365))), (K*(np.exp(-r*(N-i)*deltaT/365)))
 
     elif algorithm == 'implicit':
 
@@ -128,6 +128,7 @@ def obtain_forward_matrices(N, M, deltaS, Smax, K, r, deltaT, a, M1, M2, algorit
             
             #augmented assignment
             i-=1
+
     return fc, fp
 
 def obtain_call_put_option(S, deltaS, fc, fp):
@@ -146,14 +147,20 @@ def option_price_calculator(
     Volatility,
     Yield_rate,
     T,
-    algorithm,
-    type
+    algorithm
     ):
 
     # NOTE values should already be pre-processed by the get_all_values() method prior to calling this method.
     # S, K, r, sigma, q, T = pre_process_input(Stock, Exercise_Price, Interest_rate, Volatility, Yield_rate, T)
-        
+
+    print('T value: ', T)
+    S, K, r, sigma, q, T = Stock, Exercise_Price, Interest_rate, Volatility, Yield_rate, T
+    
+    print('Right before init of parameters')
+    print('T value: ', T)
     N, M, Smax, deltaT, deltaS = initialization_parameters(T, Exercise_Price)
+    print('N: ', N)
+    print('M: ', M)
     
     a, M1, M2 = obtain_matrix_a(deltaT, Volatility, Interest_rate, Yield_rate, M, algorithm)
 
@@ -161,16 +168,12 @@ def option_price_calculator(
     
     calloption, putoption = obtain_call_put_option(Stock, deltaS, fc, fp)
 
-    if type == 'call':
-        return calloption
-    elif type == 'put':
-        return putoption
-
+    return calloption, putoption
+        
 def delta_calculation(S, K, r, q, T, sigma, optiontype):
     #have to reassign d1 and d2 for new S values
     #local variables
     d1gamma = (math.log(S/K)+(r-q+(sigma**2)/2)*(T))/(sigma*math.sqrt(T))
-    d2gamma = d1gamma-sigma*math.sqrt(T)
     delta_call, delta_put = math.exp(-q*T)*stats.norm.cdf(d1gamma), -math.exp(-q*T)*stats.norm.cdf(-d1gamma)
     if optiontype == 'call':
         return delta_call 
@@ -187,32 +190,29 @@ def get_all_values(
     Expiration_date,
     Value_date,
     algorithm,
-    option_type
-):    
+):  
+    print("INPUTS: ")
+    print("Stock: ", Stock)
+    print("Exercise_Price: ", Exercise_Price)
+    print("Interest_rate: ", Interest_rate)
+    print("Volatility: ", Volatility)
+    print("Algorithm: ", algorithm)
+    print("Value_date: ", Value_date)
+    print("Expiration_date: ", Expiration_date)
 
-    # S = 50
-    # K = 50
-    # r = 4
-    # sigma = 40
-    # q = 1
-    # Value_date = datetime.date(2018, 10, 24)
-    # Expiration_date = datetime.date(2018, 12, 1)
-    # algo = 'crank nicolson'
-    # option_type = 'call'
+    # Value_date = datetime.date(2011, 1, 1)
+    # Expiration_date = datetime.date(2011, 7, 3)
 
     #process data first, so can apply to greeks (or can change the flow later on)
 
     S, K, r, sigma, q, T = pre_process_input(Stock, Exercise_Price, Interest_rate, Volatility, Yield_rate, Expiration_date, Value_date)
 
     #need to assign for 
-    calloption = option_price_calculator(S, K, r, sigma, q, T, algorithm, 'call')
-    putoption = option_price_calculator(S, K, r, sigma, q, T, algorithm, 'put')
+    calloption, putoption = option_price_calculator(S, K, r, sigma, q, T, algorithm)
 
     #generate for user to see values (or can show both)
-    if option_type == 'call':
-        print('option price = '+ str(calloption))
-    elif option_type == 'put':
-        print('option price = '+ str(putoption))
+    print('call price = '+ str(calloption))
+    print('put price = '+ str(putoption))
 
     #greeks calculation
     d1 = (math.log(S/K)+(r - q + ( sigma ** 2)/2) * (T))/(sigma*math.sqrt(T))
@@ -238,17 +238,22 @@ def get_all_values(
                             delta_calculation(0.99*S, K, r, q, T, sigma, 'put'))/2
 
     #theta 1 day
-    theta_call_oneday = (option_price_calculator(S, K, r, sigma, q, T-1/365, algorithm, 'call')[0]-
-                option_price_calculator(S, K, r, sigma, q, T, algorithm, 'call')[0])
-    theta_put_oneday = (option_price_calculator(S, K, r, sigma, q, T-1/365, algorithm, 'put')[0]-
-                        option_price_calculator(S, K, r, sigma, q, T, algorithm, 'put')[0])
+
+    # NOTE repeated calls to option_price_calculator.
+    # For theta1 and theta7
+    # Consider consolidating and prestoring these values instead of repeat calling
+
+    theta_call_oneday = (option_price_calculator(S, K, r, sigma, q, T-1/365, algorithm)[0][0]-
+                option_price_calculator(S, K, r, sigma, q, T, algorithm)[0][0])
+    theta_put_oneday = (option_price_calculator(S, K, r, sigma, q, T-1/365, algorithm)[1][0]-
+                        option_price_calculator(S, K, r, sigma, q, T, algorithm)[1][0])
 
 
     #theta 7 day
-    theta_call_sevenday = (option_price_calculator(S, K, r, sigma, q, T-7/365, algorithm, 'call')[0]-
-                option_price_calculator(S, K, r, sigma, q, T, algorithm, 'call')[0])
-    theta_put_sevenday = (option_price_calculator(S, K, r, sigma, q, T-7/365, algorithm, 'put')[0]-
-                        option_price_calculator(S, K, r, sigma, q, T, algorithm, 'put')[0])
+    theta_call_sevenday = (option_price_calculator(S, K, r, sigma, q, T-7/365, algorithm)[0][0]-
+                option_price_calculator(S, K, r, sigma, q, T, algorithm)[0][0])
+    theta_put_sevenday = (option_price_calculator(S, K, r, sigma, q, T-7/365, algorithm)[1][0]-
+                        option_price_calculator(S, K, r, sigma, q, T, algorithm)[1][0])
 
     #vega
     vega_call = vega_put = S*math.exp(-q*T)*stats.norm.pdf(d1)*math.sqrt(T)/100
@@ -277,7 +282,7 @@ def get_all_values(
     #zero volatility
     ZVc, ZVp = np.maximum(S*math.exp((r-q)*T)-K,0)*math.exp(-r*T), np.maximum(K-S*math.exp((r-q)*T),0)*math.exp(-r*T)
 
-    return {
+    output_dictionary = {
         'call': {
             'value': calloption[0],
             'delta': delta_call,
@@ -313,37 +318,113 @@ def get_all_values(
             'zero_volatility': ZVp,
         }
     }
+    print(output_dictionary)
+
+    return output_dictionary
+
+#class
+class implicit():
+    @staticmethod
+    def implicitcallandput(Stock, Exercise_Price, Interest_rate, Volatility, Yield_rate, Expiration_date, Value_date):
+        S = float(Stock)
+        K = float(Exercise_Price)
+        r = float(Interest_rate)/100 
+        sigma = float(Volatility)/100
+        q = float(Yield_rate)/100
+        T = Value_date.daysTo(Expiration_date)
+        algorithm = 'implicit'
+        
+        implicit_call, implicit_put = option_price_calculator(S, K, r, sigma, q, T, algorithm)
+        return {'call':implicit_call, 'put':implicit_put}
+
+class explicit():
+    @staticmethod
+    def explicitcallandput(Stock, Exercise_Price, Interest_rate, Volatility, Yield_rate, Expiration_date, Value_date):
+        S = float(Stock)
+        K = float(Exercise_Price)
+        r = float(Interest_rate)/100 
+        sigma = float(Volatility)/100
+        q = float(Yield_rate)/100
+        T = Value_date.daysTo(Expiration_date)
+        algorithm = 'explicit'
+        
+        explicit_call, explicit_put = option_price_calculator(S, K, r, sigma, q, T, algorithm)
+        return {'call':explicit_call, 'put':explicit_put}
+
+class crank_nicolson():
+    @staticmethod
+    def crank_nicolson_callandput(Stock, Exercise_Price, Interest_rate, Volatility, Yield_rate, Expiration_date, Value_date):
+        S = float(Stock)
+        K = float(Exercise_Price)
+        r = float(Interest_rate)/100 
+        sigma = float(Volatility)/100
+        q = float(Yield_rate)/100
+        T = Value_date.daysTo(Expiration_date)
+        algorithm = 'crank nicolson'
+        
+        crank_nicolson_call, crank_nicolson_put = option_price_calculator(S, K, r, sigma, q, T, algorithm)
+        return {'call':crank_nicolson_call, 'put':crank_nicolson_put}
 
 # tester method
 
 #global variables (to be obtained from GUI)
-Stock = 50
-Exercise_Price = 50
-Interest_rate = 4
-Volatility = 40
-Yield_rate = 1
-Value_date = datetime.date(2011, 1, 1)
-Expiration_date = datetime.date(2011, 7, 3)
-algorithm = 'crank nicolson' #options are 'implicit', 'explicit', and 'crank nicolson'
-option_type = 'put'
+# Stock = 50
+# Exercise_Price = 50
+# Interest_rate = 4
+# Volatility = 40
+# Yield_rate = 1
+# Value_date = datetime.date(2011, 1, 1)
+# Expiration_date = datetime.date(2011, 7, 3)
+# algorithm = 'crank nicolson' #options are 'implicit', 'explicit', and 'crank nicolson'
+# option_type = 'put'
 
-print(get_all_values(
-    Stock,
-    Exercise_Price,
-    Interest_rate,
-    Volatility,
-    Yield_rate,
-    Expiration_date,
-    Value_date,
-    algorithm,
-    option_type = 'call'), 
-    get_all_values(
-    Stock,
-    Exercise_Price,
-    Interest_rate,
-    Volatility,
-    Yield_rate,
-    Expiration_date,
-    Value_date,
-    algorithm,
-    option_type = 'put'))
+# print(get_all_values(
+#     Stock,
+#     Exercise_Price,
+#     Interest_rate,
+#     Volatility,
+#     Yield_rate,
+#     Expiration_date,
+#     Value_date,
+#     algorithm,
+#     option_type = 'call'), 
+#     get_all_values(
+#     Stock,
+#     Exercise_Price,
+#     Interest_rate,
+#     Volatility,
+#     Yield_rate,
+#     Expiration_date,
+#     Value_date,
+#     algorithm,
+#     option_type = 'put'))
+
+# print("-------------------------------------------------------------------")
+# print("From classes:")
+# print("implicit:")
+# print(implicit().implicitcallandput(Stock,
+#     Exercise_Price,
+#     Interest_rate,
+#     Volatility,
+#     Yield_rate,
+#     Expiration_date,
+#     Value_date))
+
+# print('explicit:')
+# print(explicit().explicitcallandput(Stock,
+#     Exercise_Price,
+#     Interest_rate,
+#     Volatility,
+#     Yield_rate,
+#     Expiration_date,
+#     Value_date))
+
+# print('crank_nicolson:')
+# print(crank_nicolson().crank_nicolson_callandput(Stock,
+#     Exercise_Price,
+#     Interest_rate,
+#     Volatility,
+#     Yield_rate,
+#     Expiration_date,
+#     Value_date)
+# )
